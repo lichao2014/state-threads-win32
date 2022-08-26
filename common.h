@@ -43,9 +43,7 @@
 #define __ST_COMMON_H__
 
 #include <stddef.h>
-#include <unistd.h>
 #include <sys/types.h>
-#include <sys/time.h>
 #include <setjmp.h>
 
 /* Enable assertions only if DEBUG is defined */
@@ -66,17 +64,11 @@
 
 #include "st.h"
 #include "md.h"
+#include "fcontext.h"
 
-#ifdef WIN32
-#include <Mswsock.h>
-#include <winsock2.h>
-#include <sys/types.h>
-
-#define inline __inline
+#ifdef _WIN32
 
 #define poll WSAPoll
-
-
 
 #endif
 
@@ -196,7 +188,7 @@ struct _st_thread {
 
   _st_cond_t *term;           /* Termination condition variable for join */
 
-  jmp_buf context;            /* Thread's context */
+  fcontext_t context;            /* Thread's context */
 };
 
 
@@ -412,21 +404,19 @@ void _st_iterate_threads(void);
  * Switch away from the current thread context by saving its state and
  * calling the thread scheduler
  */
-#define _ST_SWITCH_CONTEXT(_thread)       \
-    ST_BEGIN_MACRO                        \
-    if (!MD_SETJMP((_thread)->context)) { \
-      _st_vp_schedule();                  \
-    }                                     \
+#define _ST_SWITCH_CONTEXT(_thread)         \
+    ST_BEGIN_MACRO                          \
+    _st_vp_schedule();                      \
     ST_END_MACRO
 
 /*
  * Restore a thread context that was saved by _ST_SWITCH_CONTEXT or
  * initialized by _ST_INIT_CONTEXT
  */
-#define _ST_RESTORE_CONTEXT(_thread)   \
+#define _ST_RESTORE_CONTEXT(_thread, ud, fn)   \
     ST_BEGIN_MACRO                     \
     _ST_SET_CURRENT_THREAD(_thread);   \
-    MD_LONGJMP((_thread)->context, 1); \
+    ontop_fcontext((_thread)->context, ud, fn); \
     ST_END_MACRO
 
 /*

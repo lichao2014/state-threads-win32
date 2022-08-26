@@ -40,10 +40,9 @@
  */
 
 #include <stdlib.h>
-#include <unistd.h>
 #include <sys/types.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 
 #include <io.h>
 #include <winsock2.h>
@@ -56,7 +55,6 @@
 #include <sys/resource.h>
 #endif
 
-#include <sys/time.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <errno.h>

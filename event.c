@@ -33,11 +33,11 @@
  */
 
 #include <stdlib.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
+
 #include "common.h"
 
 #ifdef MD_HAVE_KQUEUE

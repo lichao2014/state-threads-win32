@@ -40,7 +40,6 @@
  */
 
 #include <stdlib.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
 #include <time.h>
@@ -107,6 +106,18 @@ int st_poll(struct pollfd *pds, int npds, st_utime_t timeout)
   return n;
 }
 
+static transfer_t empty = { 0, 0 };
+
+transfer_t ontop_entry(transfer_t t)
+{
+    _st_thread_t* prev_thread = (_st_thread_t*)t.data;
+    if (prev_thread)
+    {
+        prev_thread->context = t.fctx;
+    }
+
+    return empty;
+}
 
 void _st_vp_schedule(void)
 {
@@ -122,9 +133,14 @@ void _st_vp_schedule(void)
   }
   ST_ASSERT(thread->state == _ST_ST_RUNNABLE);
 
+
+  _st_thread_t* prev_thread = _st_this_thread;
   /* Resume the thread */
   thread->state = _ST_ST_RUNNING;
-  _ST_RESTORE_CONTEXT(thread);
+  if (prev_thread != thread)
+  {
+      _ST_RESTORE_CONTEXT(thread, prev_thread, ontop_entry);
+  }
 }
 
 
@@ -312,9 +328,9 @@ int st_thread_join(_st_thread_t *thread, void **retvalp)
 }
 
 
-void _st_thread_main(void)
+void _st_thread_main(transfer_t t)
 {
-  _st_thread_t *thread = _ST_CURRENT_THREAD();
+  _st_thread_t *thread = (_st_thread_t *)(t.data);
 
   /*
    * Cap the stack by zeroing out the saved return address register
@@ -322,6 +338,8 @@ void _st_thread_main(void)
    * to stop unwinding the stack. It's a no-op on most platforms.
    */
   MD_CAP_STACK(&thread);
+
+  jump_fcontext(t.fctx, 0);
 
   /* Run thread main */
   thread->retval = (*thread->start)(thread->arg);
@@ -587,11 +605,9 @@ _st_thread_t *st_thread_create(void *(*start)(void *arg), void *arg,
   thread->start = start;
   thread->arg = arg;
 
-#ifndef __ia64__
-  _ST_INIT_CONTEXT(thread, stack->sp, _st_thread_main);
-#else
-  _ST_INIT_CONTEXT(thread, stack->sp, stack->bsp, _st_thread_main);
-#endif
+    size_t stack_size = (char *)stack->sp - stack->stk_bottom;
+    thread->context = make_fcontext(stack->sp, stack_size, _st_thread_main);
+    thread->context = jump_fcontext(thread->context, thread).fctx;
 
   /* If thread is joinable, allocate a termination condition variable */
   if (joinable) {

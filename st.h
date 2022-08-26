@@ -37,26 +37,27 @@
 #ifndef __ST_THREAD_H__
 #define __ST_THREAD_H__
 
-#include <unistd.h>
-#include <sys/types.h>
-#ifdef WIN32
-#include <Mswsock.h>
+#ifdef _WIN32
+#include <wtypes.h>
 #include <winsock2.h>
-#include <sys/types.h>
 #else
 #include <sys/socket.h>
 #include <sys/uio.h>
 #include <poll.h>
 #endif
+
+#include <sys/types.h>
 #include <time.h>
 #include <errno.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 struct iovec {
 	u_long iov_len;
 	char *iov_base;
 };
 size_t getpagesize(void);
+typedef long ssize_t;
+typedef int mode_t;
 #endif
 
 #define ST_VERSION	    "1.9"

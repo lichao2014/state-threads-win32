@@ -3,6 +3,7 @@
 
 #include "st.h"
 
+#define STDERR_FILENO -1
 #define MAX_BIND_ADDRS 16
 #define SERV_PORT_DEFAULT 8000
 #define LISTENQ_SIZE_DEFAULT 256

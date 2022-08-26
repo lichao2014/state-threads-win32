@@ -113,7 +113,7 @@
   return (tv.tv_sec * 1000000LL + tv.tv_usec)
 
 #elif defined (WIN32)
-#include <setjmp.h>
+#include <sys/timeb.h>
 #define MD_STACK_GROWS_DOWN
 #define MD_USE_BSD_ANON_MMAP
 #define MD_ACCEPT_NB_NOT_INHERITED
@@ -133,8 +133,6 @@
   struct _timeb tb;              \
   _ftime(&tb);             \
   return((tb.time*1000000)+(tb.millitm*1000));
-
-
 
 #elif defined (DARWIN)
 
